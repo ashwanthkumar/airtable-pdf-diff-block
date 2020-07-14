@@ -56,6 +56,7 @@ export function DiffView({ appState, setAppState }) {
           setCurrentStep(`Computing Diff for ${index + 1} out of ${total} records.`);
           try {
             const response = await pdfDiffClient.computeDiff(prevDoc, currentDoc);
+            // console.log("Emitting the Diff PNG URl -- " + response.diffPngUrl);
             if (response.status) {
               await sourceTable.updateRecordAsync(record.id, {
                 [diffResultColName]: [{ url: response.diffPngUrl }],
