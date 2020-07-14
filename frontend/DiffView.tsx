@@ -104,7 +104,7 @@ export function DiffView({ appState, setAppState }) {
         <Box paddingBottom='10px' display='flex' alignItems='center' justifyContent='center'>
           <Heading size='xlarge'>
             {!hasFinished && "Document Processing"}
-            {hasFinished && "Document Process Complete"}
+            {hasFinished && "Document Processing Complete"}
           </Heading>
         </Box>
 
