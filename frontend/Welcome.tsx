@@ -40,11 +40,13 @@ export function Welcome({ appState, setAppState, setIsSettingsVisible }) {
     e.preventDefault();
     setLoading(true);
 
-    const updatedAppState = { ...appState };
-    // console.log(updatedAppState);
-    // console.log(JSON.stringify(updatedAppState));
-    updatedAppState.index = 1;
-    setAppState(updatedAppState);
+    if (!appState.index) {
+      const updatedAppState = { ...appState };
+      // console.log(updatedAppState);
+      // console.log(JSON.stringify(updatedAppState));
+      updatedAppState.index = 1;
+      setAppState(updatedAppState);
+    }
 
     setIsSettingsVisible(false);
   }
