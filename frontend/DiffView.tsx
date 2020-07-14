@@ -9,7 +9,7 @@ import { PdfDiffServiceClient } from './PdfDiffServiceClient';
 
 const queue = new PQueue({ concurrency: 1 });
 
-const diffResultColName = "Doc Diff (If Any)"
+const diffResultColName = "Doc Diff"
 
 export function DiffView({ appState, setAppState }) {
   const settings = useSettings();
