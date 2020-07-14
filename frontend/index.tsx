@@ -28,9 +28,9 @@ function PdfDiffBlock() {
     const { isValid, message, settings } = useSettings();
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     useSettingsButton(() => {
-        if (!isSettingsVisible) {
-            viewport.enterFullscreenIfPossible();
-        }
+        // if (!isSettingsVisible) {
+        //     viewport.enterFullscreenIfPossible();
+        // }
         setIsSettingsVisible(!isSettingsVisible);
     });
 
