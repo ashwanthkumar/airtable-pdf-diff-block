@@ -60,7 +60,7 @@ export function Welcome({ appState, setAppState, setIsSettingsVisible }) {
 
         <Box paddingBottom='10px'>
           <Text variant="paragraph" size="xlarge">
-            To use this block, you need to enter the location of the PDF Diff Service.
+            To use this block, you need to enter the url of the PDF Diff Service.
           </Text>
           <Heading size="xsmall">
             Note: These values will be accessible to everyone who has access to this base.
