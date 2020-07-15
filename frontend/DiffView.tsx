@@ -10,6 +10,7 @@ import { PdfDiffServiceClient } from './PdfDiffServiceClient';
 const queue = new PQueue({ concurrency: 1 });
 
 const diffResultColName = "Doc Diff"
+const hasDiffColName = "Has Diff"
 
 export function DiffView({ appState, setAppState }) {
   const settings = useSettings();
@@ -30,9 +31,13 @@ export function DiffView({ appState, setAppState }) {
     setHasFinished(false);
     setProgress(0.0);
     setCurrentStep('Initializing');
-    const predResultCol = sourceTable.getFieldByNameIfExists(diffResultColName);
-    if (!predResultCol) {
-      sourceTable.unstable_createFieldAsync(diffResultColName, FieldType.MULTIPLE_ATTACHMENTS);
+    const diffResultCol = sourceTable.getFieldByNameIfExists(diffResultColName);
+    if (!diffResultCol) {
+      await sourceTable.unstable_createFieldAsync(diffResultColName, FieldType.MULTIPLE_ATTACHMENTS);
+    }
+    const hasDiffCol = sourceTable.getFieldByNameIfExists(hasDiffColName);
+    if (!hasDiffCol) {
+      await sourceTable.unstable_createFieldAsync(hasDiffColName, FieldType.SINGLE_LINE_TEXT);
     }
 
     const queryData = await sourceTable.selectRecordsAsync();
@@ -59,7 +64,8 @@ export function DiffView({ appState, setAppState }) {
             // console.log("Emitting the Diff PNG URl -- " + response.diffPngUrl);
             if (response.status) {
               await sourceTable.updateRecordAsync(record.id, {
-                [diffResultColName]: [{ url: response.diffPngUrl }],
+                [diffResultColName]: response.hasDiff ? [{ url: response.diffPngUrl }] : [],
+                [hasDiffColName]: response.hasDiff ? 'Yes' : 'No',
               });
             }
           } catch (e) {
