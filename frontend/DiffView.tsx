@@ -10,7 +10,7 @@ import { PdfDiffServiceClient } from './PdfDiffServiceClient';
 const queue = new PQueue({ concurrency: 1 });
 
 const diffResultColName = "Doc Diff"
-const hasDiffColName = "Has Diff"
+const hasDiffColName = "Has Changed"
 
 export function DiffView({ appState, setAppState }) {
   const settings = useSettings();
