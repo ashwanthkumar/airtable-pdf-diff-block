@@ -7,7 +7,7 @@ import { Record, FieldType } from '@airtable/blocks/models';
 import { useLocalStorage } from './use_local_storage';
 import { PdfDiffServiceClient } from './PdfDiffServiceClient';
 
-const queue = new PQueue({ concurrency: 1 });
+const queue = new PQueue({ concurrency: 2 });
 
 const diffResultColName = "Doc Diff"
 const hasDiffColName = "Has Changed"
@@ -40,11 +40,13 @@ export function DiffView({ appState, setAppState }) {
       await sourceTable.unstable_createFieldAsync(hasDiffColName, FieldType.SINGLE_LINE_TEXT);
     }
 
-    const queryData = await sourceTable.selectRecordsAsync();
-    const total = queryData.records.length;
+    const queryData = await sourceTable.selectRecordsAsync({
+      fields: [prevDocField, currentDocField, diffResultCol, hasDiffCol]
+    });
+    const totalRecords = queryData.records.length;
 
     const diff = async (record: Record, index: number) => {
-      const prediction = record.getCellValue(diffResultColName);
+      const prediction = record.getCellValue(diffResultColName) || record.getCellValue(hasDiffColName);
       if (!prediction) {
         const prev = record.getCellValue(prevDocField);
         const current = record.getCellValue(currentDocField);
@@ -58,7 +60,7 @@ export function DiffView({ appState, setAppState }) {
 
           const responseFromAirtable_current = await fetch(j.url);
           const currentDoc = await responseFromAirtable_current.blob();
-          setCurrentStep(`Computing Diff for ${index + 1} out of ${total} records.`);
+          setCurrentStep(`Computing Diff for ${index + 1} out of ${totalRecords} records.`);
           try {
             const response = await pdfDiffClient.computeDiff(prevDoc, currentDoc);
             // console.log("Emitting the Diff PNG URl -- " + response.diffPngUrl);
@@ -76,15 +78,15 @@ export function DiffView({ appState, setAppState }) {
         // console.log("Already predicted, skipping record");
       }
 
-      setProgress((index + 1) / total);
-      setCurrentStep(`Computed Diff for ${index + 1} out of ${total} records.`)
+      setProgress((index + 1) / totalRecords);
+      setCurrentStep(`Computed Diff for ${totalRecords} records.`)
     }
     const allDiffs = queryData.records.map(function (record, index) {
       return (() => diff(record, index));
     });
 
     await queue.addAll(allDiffs);
-    await queue.onEmpty();
+    await queue.onIdle();
     queryData.unloadData();
     setHasFinished(true);
   }
@@ -98,6 +100,17 @@ export function DiffView({ appState, setAppState }) {
     computeDiff();
   }
 
+  const cancel = async () => {
+    setCurrentStep(`Waiting for in-flight requests to complete. Pending: ${queue.pending} requests`);
+    if (queue.size > 0) {
+      queue.clear();
+      await queue.onIdle();
+      setCurrentStep("Operation has been cancelled.")
+      setHasFinished(true);
+      setProgress(1.0);
+    }
+  }
+
   useEffect(() => {
     if (!hasFinished) {
       computeDiff();
@@ -109,24 +122,26 @@ export function DiffView({ appState, setAppState }) {
       <Box maxWidth='580px'>
         <Box paddingBottom='10px' display='flex' alignItems='center' justifyContent='center'>
           <Heading size='xlarge'>
-            {!hasFinished && "Document Processing"}
-            {hasFinished && "Document Processing Complete"}
+            {hasFinished ? "Process Completed" : "Processing Documents"}
           </Heading>
         </Box>
 
-        <Box>
-          <Box display='flex'>
+        <Box width='300px'>
+          <Box display='flex' alignItems='center' justifyContent='center'>
             <Heading size='xsmall'>{currentStep}</Heading>
           </Box>
           <ProgressBar progress={progress} />
         </Box>
 
-        {hasFinished &&
-          <Box display='flex' alignItems='center' justifyContent='space-between' padding='20px'>
-            <Button variant='primary' icon='history' onClick={startOver}>Start Over</Button>
-            <Button variant='danger' icon='redo' onClick={redo}>Re-do</Button>
-          </Box>
-        }
+        <Box display='flex' alignItems='center' justifyContent='space-between' padding='20px'>
+          <Button variant='primary' icon='history' disabled={!hasFinished} onClick={startOver}>Start Over</Button>
+          <Button
+            variant={hasFinished ? 'default' : 'danger'}
+            icon={hasFinished ? 'redo' : 'x'}
+            onClick={hasFinished ? redo : cancel}>
+            {hasFinished ? "Re-do" : "Cancel"}
+          </Button>
+        </Box>
       </Box>
     </Box>
   );
